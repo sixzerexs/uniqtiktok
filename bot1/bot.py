@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import sys
+import os
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
-import os
 
 from handlers import router
 
