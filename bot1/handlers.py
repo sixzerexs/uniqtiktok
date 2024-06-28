@@ -4,7 +4,7 @@ import io
 import secrets
 from PIL import Image, ImageFilter, ImageEnhance
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, FSInputFile, InputMediaPhoto
 from aiogram import Router
 from dotenv import load_dotenv
 
@@ -15,6 +15,8 @@ URI_PHOTO_INFO = f"https://api.telegram.org/bot{TOKEN}/getfile?file_id="
 URI_PHOTO_PATH = f"https://api.telegram.org/file/bot{TOKEN}/"
 
 router = Router()
+
+photoProccesing = ['Contrast','Brightness','Color','Sharpness']
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
@@ -27,21 +29,23 @@ async def cmd_info(message: Message):
 @router.message()
 async def cmd(message: Message):
     if message.photo:
+        msg_temp = await message.answer("Photo at proccesing...")
         lastElement = len(message.photo) - 1
         fileid = message.photo[lastElement].file_id
         resp = requests.get(URI_PHOTO_INFO + fileid)
         img_uri_path = resp.json()['result']['file_path']
         img = requests.get(URI_PHOTO_PATH + img_uri_path)
         img = Image.open(io.BytesIO(img.content))
-        img = img.filter(ImageFilter.GaussianBlur(radius=1.05))
-        img = ImageEnhance.Brightness(img).enhance(1.1)
+        img = ImageEnhance.Brightness(img).enhance(1.13)
         img = ImageEnhance.Contrast(img).enhance(1.1)
-        img = ImageEnhance.Color(img).enhance(1.05)
-        img = ImageEnhance.Sharpness(img).enhance(1.1)
+        img = ImageEnhance.Color(img).enhance(0.90)
+        img = ImageEnhance.Sharpness(img).enhance(1.15)
+        img = img.filter(ImageFilter.SHARPEN)
         if not os.path.exists('bot1/static'):
             os.mkdir('bot1/static')
         img_name = secrets.token_hex(8)
-        img.save(f'bot1/static/{img_name}.png', format='PNG')
-        await message.answer_photo(photo=FSInputFile(f'bot1/static/{img_name}.png'), caption='123')
+        img.save(f'bot1/static/{img_name}.png', format='PNG')    
+        await msg_temp.delete()
+        await message.answer_photo(photo=FSInputFile(f'bot1/static/{img_name}.png'), caption=f'@{message.from_user.username} image.\n\n@uniqtbot')
     else:
         print(f'\"{message.text}\" from user - {message.from_user.id}')
