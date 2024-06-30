@@ -29,9 +29,6 @@ async def cmd(message: Message):
     if message.photo:
         msg_temp = await message.answer("Photo at proccesing...")
         img_name = secrets.token_hex(8)
-        img_text = message.caption
-        
-        print(message.caption)
         
         lastElement = len(message.photo) - 1
         fileid = message.photo[lastElement].file_id
@@ -39,26 +36,38 @@ async def cmd(message: Message):
         img_uri_path = resp.json()['result']['file_path']
         img = requests.get(URI_PHOTO_PATH + img_uri_path)
         img = Image.open(io.BytesIO(img.content))
-        
-        img = ImageEnhance.Brightness(img).enhance(1.13)
-        img = ImageEnhance.Contrast(img).enhance(1.1)
-        img = ImageEnhance.Color(img).enhance(0.85)
-        # img = ImageEnhance.Sharpness(img).enhance(1.12)
+
+        img = ImageEnhance.Brightness(img).enhance(1.2)
+        img = ImageEnhance.Contrast(img).enhance(1.2)
+        img = ImageEnhance.Color(img).enhance(0.80)
+        img = ImageEnhance.Sharpness(img).enhance(1.2)
         img = img.filter(ImageFilter.SHARPEN)
-        
+                
         width, height = img.size
         img = img.crop((10,10,width-10,height-10))
         
         d = ImageDraw.Draw(img)
-        d.line((0, height, width, 0), fill=0)
+        d.line((0, height/3, width/3, 70), fill=0)
         
-        fnt = ImageFont.truetype("bot1/fonts/Arco.ttf", 20)#img text take from caption img
-        _, _, w, h = d.textbbox((0, 0), img_text, font=fnt)
-        d.text(((width-w)/2, height-height/100*10), f"{img_text}", font=fnt, fill=(230,230,230))#xy = inline_keyboard(center,left,right....)
+        if message.caption:
+            font = ImageFont.truetype("bot1/fonts/Arco.ttf", 25)
+            _, _, w, h = d.textbbox((0, 0), message.caption, font=font)
+            x = (width-w)/2
+            y = height-height/100*10
+
+            d.text((x-2, y-2), message.caption, font=font, fill='black')
+            d.text((x+2, y-2), message.caption, font=font, fill='black')
+            d.text((x-2, y+2), message.caption, font=font, fill='black')
+            d.text((x+2, y+2), message.caption, font=font, fill='black')
+            d.text(((width-w)/2, height-height/100*10), f"{message.caption}", font=font, fill=(240,240,240))#xy = inline_keyboard(center,left,right....)
+            
+        data = list(img.getdata())
+        image_without_exif = Image.new(img.mode, img.size)
+        image_without_exif.putdata(data)
         
         if not os.path.exists('bot1/static'):
-            os.mkdir('bot1/static')
-        img.save(f'bot1/static/{img_name}.png', format='PNG')
+            os.mkdir('bot1/static') 
+        image_without_exif.save(f'bot1/static/{img_name}.png', 'PNG')
         await msg_temp.delete()
         await message.answer_photo(photo=FSInputFile(f'bot1/static/{img_name}.png'), caption=f'@{message.from_user.username} image.\n\n@uniqtbot')
     else:
